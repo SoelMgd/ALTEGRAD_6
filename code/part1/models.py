@@ -54,19 +54,12 @@ class GNN(nn.Module):
         ############## Tasks 2 and 4
     
         ##################
-        # Step 1: First message passing layer + ReLU
-        x, alpha1 = self.mp1(x, adj)  # Attention layer
-        x = self.relu(x)  # Apply ReLU activation
-
-        # Step 2: Dropout for regularization
+        x, _ = self.mp1(x, adj)
+        x = self.relu(x)
         x = self.dropout(x)
-
-        # Step 3: Second message passing layer + ReLU
-        x, alpha2 = self.mp2(x, adj)  # Attention layer
-        x = self.relu(x)  # Apply ReLU activation
-
-        # Step 4: Fully-connected layer + softmax for classification
-        x = self.fc(x)  # Linear transformation to output classes
+        x, alpha = self.mp2(x, adj)
+        x = self.relu(x)
+        x = self.fc(x)
         ##################
 
-        return F.log_softmax(x, dim=1)
+        return F.log_softmax(x, dim=1), alpha
