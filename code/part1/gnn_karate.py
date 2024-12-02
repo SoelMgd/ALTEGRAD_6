@@ -26,14 +26,14 @@ learning_rate = 0.01
 dropout_rate = 0.1
 
 # Loads the karate network
-G = nx.read_weighted_edgelist('/content/ALTEGRAD_6/code/data/karate.edgelist', delimiter=' ', nodetype=int, create_using=nx.Graph())
+G = nx.read_weighted_edgelist('./data/karate.edgelist', delimiter=' ', nodetype=int, create_using=nx.Graph())
 print('Number of nodes:', G.number_of_nodes())
 print('Number of edges:', G.number_of_edges())
 
 n = G.number_of_nodes()
 
 # Loads the class labels
-class_labels = np.loadtxt('/content/ALTEGRAD_6/code/data/karate_labels.txt', delimiter=',', dtype=np.int32)
+class_labels = np.loadtxt('./data/karate_labels.txt', delimiter=',', dtype=np.int32)
 idx_to_class_label = dict()
 for i in range(class_labels.shape[0]):
     idx_to_class_label[class_labels[i,0]] = class_labels[i,1]
@@ -48,6 +48,7 @@ n_class = 2
 ############## Task 3
 adj = nx.adjacency_matrix(G)
 features = np.random.randn(n, n_hidden)
+##############
 
 # Yields indices to split data into training and test sets
 idx = np.random.RandomState(seed=42).permutation(n)
@@ -70,7 +71,7 @@ for epoch in range(epochs):
     t = time.time()
     model.train()
     optimizer.zero_grad()
-    output = model(features, adj)
+    output, alpha = model(features, adj)
     loss_train = F.nll_loss(output[idx_train], y[idx_train])
     acc_train = accuracy_score(torch.argmax(output[idx_train], dim=1).detach().cpu().numpy(), y[idx_train].cpu().numpy())
     loss_train.backward()
@@ -85,7 +86,7 @@ print("Optimization Finished!")
 
 # Testing
 model.eval()
-output = model(features, adj)
+output, alpha = model(features, adj)
 loss_test = F.nll_loss(output[idx_test], y[idx_test])
 acc_test = accuracy_score(torch.argmax(output[idx_test], dim=1).detach().cpu().numpy(), y[idx_test].cpu().numpy())
 print("Test set results:",
@@ -118,4 +119,5 @@ plt.figure(1,figsize=(12,12))
 pos = nx.spring_layout(G_directed)
 arc_rad = 0.25
 nx.draw(G_directed, width=weights, connectionstyle=f'arc3, rad = {arc_rad}')
+plt.savefig('karate_attention_weights.png')
 plt.show()

@@ -53,7 +53,7 @@ class GNN(nn.Module):
         
         ############## Tasks 2 and 4
     
-        ##################
+        ################## Tasks 2
         x, _ = self.mp1(x, adj)
         x = self.relu(x)
         x = self.dropout(x)
