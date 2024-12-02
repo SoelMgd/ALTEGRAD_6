@@ -19,19 +19,21 @@ class GATLayer(nn.Module):
         ############## Task 1
     
         ##################
-        # your code here #
+        h = self.fc(x)
+        indices = adj.coalesce().indices()
+        edge_features = torch.cat([h[indices[0, :]], h[indices[1, :]]], dim=1)
+        e = self.leakyrelu(self.a(edge_features).squeeze())
         ##################
 
-        h = torch.exp(h.squeeze())
-        unique = torch.unique(indices[0,:])
-        t = torch.zeros(unique.size(0), device=x.device)
-        h_sum = t.scatter_add(0, indices[0,:], h)
-        h_norm = torch.gather(h_sum, 0, indices[0,:])
-        alpha = torch.div(h, h_norm)
-        adj_att = torch.sparse.FloatTensor(indices, alpha, torch.Size([x.size(0), x.size(0)])).to(x.device)
+        attention = torch.exp(e)
+        row_sum = torch.zeros(x.size(0)).to(x.device)
+        row_sum.scatter_add_(0, indices[0, :], attention)
+        alpha = attention / row_sum[indices[0, :]]  # alpha: [num_edges]
+        #adj_att = torch.sparse.FloatTensor(indices, alpha, torch.Size([x.size(0), x.size(0)])).to(x.device)
+        adj_att = torch.sparse_coo_tensor(indices, alpha, (x.size(0), x.size(0))).to(x.device)
         
         ##################
-        # your code here #
+        out = torch.sparse.mm(adj_att, h)
         ##################
 
         return out, alpha
@@ -52,7 +54,19 @@ class GNN(nn.Module):
         ############## Tasks 2 and 4
     
         ##################
-        # your code here #
+        # Step 1: First message passing layer + ReLU
+        x, alpha1 = self.mp1(x, adj)  # Attention layer
+        x = self.relu(x)  # Apply ReLU activation
+
+        # Step 2: Dropout for regularization
+        x = self.dropout(x)
+
+        # Step 3: Second message passing layer + ReLU
+        x, alpha2 = self.mp2(x, adj)  # Attention layer
+        x = self.relu(x)  # Apply ReLU activation
+
+        # Step 4: Fully-connected layer + softmax for classification
+        x = self.fc(x)  # Linear transformation to output classes
         ##################
 
         return F.log_softmax(x, dim=1)
